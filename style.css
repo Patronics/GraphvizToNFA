@@ -1,0 +1,8 @@
+#inputArea{
+	float: left;
+	width: 50%;
+}
+#finalResult{
+	float: right;
+	width: 50%;
+}
