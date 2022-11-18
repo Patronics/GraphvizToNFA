@@ -9,9 +9,11 @@
 	<div id="inputArea">
 		<label for="inputString">string to evaluate:</label><br>
 		<input type="text" id="inputString"><br>
+		<label for="acceptedString">accepting states:</label><br>
+		<input type="text" id="acceptedString" value="C"><br>
 		<br><br>
 		<label for="machineDesc">machine to run:</label><br>
-		<textarea id="machineDesc" rows="30" cols="30">
+		<textarea id="machineDesc" rows="20" cols="30">
 A 1 B
 B 2 B
 B 3 C
@@ -30,10 +32,21 @@ B 3 C
 		function process() {
 			var inputString = document.getElementById("inputString").value;
 			var machineDesc = document.getElementById("machineDesc").value;
+			var acceptedString = document.getElementById("acceptedString").value;
 			graphObj = {};
 			graphString = "";
+			acceptedStringToObj(acceptedString);
 			graphStrToObj(machineDesc);
 			console.log(graphObj);
+		}
+		
+		function acceptedStringToObj(acceptStr) {
+			var acceptArr = acceptStr.split(/[\s,]/).filter(element => element);
+			console.log(acceptArr);
+			acceptArr.forEach((node, index, arr) => {
+				graphObj[node] = graphObj[node] || {}
+				graphObj[node].isAcceptState = true;
+			})
 		}
 		
 		function graphStrToObj(graphStr){
@@ -47,16 +60,25 @@ B 3 C
 		function graphLineToObj(graphLine, index, arr) {
 			var lineArr = graphLine.split(" ").filter(element => element);
 			//console.log(lineArr);
+			/*if (lineArr[0].startsWith("!")){
+				lineArr[0]=lineArr[0].substring(1);
+				graphObj[lineArr[0]].isAcceptState = true;
+			}*/
 			graphObj[lineArr[0]] = graphObj[lineArr[0]] || {}
-			graphObj[lineArr[0]][lineArr[1]]=lineArr[2]
+			graphObj[lineArr[0]].edges = graphObj[lineArr[0]].edges || {}
+			graphObj[lineArr[0]].edges[lineArr[1]]=lineArr[2]
+			graphObj[lineArr[2]] = graphObj[lineArr[2]] || {}
 		}
 		
 		function graphObjToDOT(graphObj){
 			graphString = "digraph {";
 			for (node in graphObj){
-				for (edge in graphObj[node]){
+				if(graphObj[node].isAcceptState){
+					graphString = `${graphString}${node}[shape=doublecircle]\n`;
+				}
+				for (edge in graphObj[node].edges){
 					console.log(node);
-					graphString = `${graphString} ${node} ->  ${graphObj[node][edge]} [label="  ${edge}"] ;\n`;
+					graphString = `${graphString} ${node} ->  ${graphObj[node].edges[edge]} [label="  ${edge}"] ;\n`;
 				}
 			}
 			graphString = graphString + "}";
