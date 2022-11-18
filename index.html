@@ -3,10 +3,20 @@
 	<link rel="stylesheet" href="style.css">
 </head>
 <body>
+	<script src="https://d3js.org/d3.v5.min.js"></script>
+	<script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
+	<script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 	<div id="inputArea">
-		string to evaluate:<br> <input type="text" id="inputString"><br>
+		<label for="inputString">string to evaluate:</label><br>
+		<input type="text" id="inputString"><br>
 		<br><br>
-		machine to run:<br><textarea id="precision" rows="30" cols="40"></textarea>
+		<label for="machineDesc">machine to run:</label><br>
+		<textarea id="machineDesc" rows="30" cols="30">
+A 1 B
+B 2 B
+B 3 C
+</textarea><br>
+		<button onclick="process()">process!</button>
 	</div>
 	<div id="finalResult">
 		<div id="graph" style="text-align: center;"></div>
@@ -14,7 +24,45 @@
 		
 	</div>
 	<script type="text/javascript">
+		var graphObj = {};
+		var graphString = "";
+
+		function process() {
+			var inputString = document.getElementById("inputString").value;
+			var machineDesc = document.getElementById("machineDesc").value;
+			graphObj = {};
+			graphString = "";
+			graphStrToObj(machineDesc);
+			console.log(graphObj);
+		}
 		
+		function graphStrToObj(graphStr){
+			var graphArr = graphStr.split(/\r?\n/).filter(element => element);
+			graphArr.forEach(graphLineToObj);
+			graphObjToDOT(graphObj);
+			console.log(graphString)
+			d3.select("#graph").graphviz().renderDot(graphString);
+		}
+		
+		function graphLineToObj(graphLine, index, arr) {
+			var lineArr = graphLine.split(" ").filter(element => element);
+			//console.log(lineArr);
+			graphObj[lineArr[0]] = graphObj[lineArr[0]] || {}
+			graphObj[lineArr[0]][lineArr[1]]=lineArr[2]
+		}
+		
+		function graphObjToDOT(graphObj){
+			graphString = "digraph {";
+			for (node in graphObj){
+				for (edge in graphObj[node]){
+					console.log(node);
+					graphString = `${graphString} ${node} ->  ${graphObj[node][edge]} [label="  ${edge}"] ;\n`;
+				}
+			}
+			graphString = graphString + "}";
+		}
+		
+		d3.select("#graph").graphviz().renderDot('digraph  {a -> b[label=3]}');
 		
 		
 		
