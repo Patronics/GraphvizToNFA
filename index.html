@@ -9,6 +9,8 @@
 	<div id="inputArea">
 		<label for="inputString">string to evaluate:</label><br>
 		<input type="text" id="inputString"><br>
+		<label for="initialString">starting state:</label><br>
+		<input type="text" id="initialString" value="A"><br>
 		<label for="acceptedString">accepting states:</label><br>
 		<input type="text" id="acceptedString" value="C"><br>
 		<br><br>
@@ -19,6 +21,7 @@ B 2 B
 B 3 C
 </textarea><br>
 		<button onclick="process()">process!</button>
+		<button onclick="animateMachine()">animate!</button>
 	</div>
 	<div id="finalResult">
 		<div id="graph" style="text-align: center;"></div>
@@ -29,15 +32,25 @@ B 3 C
 		var graphObj = {};
 		var graphString = "";
 
+		function animateMachine() {
+			process(); //make sure object is up to date
+		}
+
 		function process() {
 			var inputString = document.getElementById("inputString").value;
 			var machineDesc = document.getElementById("machineDesc").value;
 			var acceptedString = document.getElementById("acceptedString").value;
+			var initialString = document.getElementById("initialString").value;
 			graphObj = {};
 			graphString = "";
+			setStartingState(initialString);
 			acceptedStringToObj(acceptedString);
 			graphStrToObj(machineDesc);
 			console.log(graphObj);
+		}
+		
+		function setStartingState(initialString) {
+			graphObj.startState__ = initialString
 		}
 		
 		function acceptedStringToObj(acceptStr) {
@@ -71,7 +84,7 @@ B 3 C
 		}
 		
 		function graphObjToDOT(graphObj){
-			graphString = "digraph {";
+			graphString = `digraph {__startState__ [label= "", shape=none,height=.0,width=.0]\n__startState__ -> ${graphObj.startState__}\n`;
 			for (node in graphObj){
 				if(graphObj[node].isAcceptState){
 					graphString = `${graphString}${node}[shape=doublecircle]\n`;
