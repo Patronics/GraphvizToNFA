@@ -18,6 +18,7 @@
 		<textarea id="machineDesc" rows="20" cols="30">
 A 1 B
 B 2 B
+B 2 D
 B 3 C
 </textarea><br>
 		<button onclick="process()">process!</button>
@@ -25,8 +26,10 @@ B 3 C
 	</div>
 	<div id="finalResult">
 		<div id="graph" style="text-align: center;"></div>
-		<div id="evalStep"></div>
-		
+		<span id="evalStepPrev"  class="evalSteps"></span>
+		<span id="evalStep" class="evalSteps"></span>
+		<span id="evalStepUpcoming"  class="evalSteps"></span>
+		<div id="evalResult"></div>
 	</div>
 	<script type="text/javascript">
 		var graphObj = {};
@@ -36,35 +39,42 @@ B 3 C
 		
 		function animateMachine() {
 			var inputString = document.getElementById("inputString").value;
-			process(); //make sure object is up to date
-			graphObj.curStates = [];
-			graphObj.nextStates = [];
-			graphObj.curStates[0]=graphObj.startState__;
-			stateStrArr = [];
-			animIndex = 0;
-			stateStrArr.push(graphObjToDOT(graphObj));
-			renderAnim(0)
-			for(let char of inputString){
-				graphObj.curStates.forEach((node, index, arr) => {
-					if(graphObj[node].edges[char] !== undefined){
-						console.log(node, char, graphObj[node].edges[char]);
-						graphObj.nextStates.push(graphObj[node].edges[char]);
-					}
-				})
-				graphObj.curStates = graphObj.nextStates;
-				stateStrArr.push(graphObjToDOT(graphObj));
-				graphObj.nextStates = [];
-			}
-			//console.log(stateStrArr[2]);
-			//d3.select("#graph").graphviz().renderDot(graphString);
+			document.getElementById("evalStepUpcoming").innerText=inputString;
 			d3.select("#graph").graphviz().zoom(false);
-			//d3.select("#graph").graphviz.growEnteringEdges(false);
 			d3.select("#graph").graphviz().transition(function(){
 					return d3.transition("main")
 					.ease(d3.easeLinear)
 					.delay(0)
 					.duration(500)
 			})
+			process(); //make sure object is up to date
+			graphObj.curStates = [];
+			graphObj.nextStates = [];
+			graphObj.curStates[0]=graphObj.startState__;
+			stateStrArr = [];
+			var curStateIndex=0;
+			animIndex = 0;
+			stateStrArr.push(graphObjToDOT(graphObj));
+			renderAnim(0)
+			for(let char of inputString){
+				graphObj.curStates.forEach((node, index, arr) => {
+					console.log(graphObj)//.curStates)
+					//console.log(graphObj.nextStates)
+					//console.log(node)
+					if(graphObj[node].edges[char] !== undefined){
+						console.log(graphObj[node].edges[char]);
+						graphObj.nextStates = graphObj.nextStates.concat(graphObj[node].edges[char]);
+						console.log(graphObj.nextStates);
+					}
+				})
+				graphObj.curStates = graphObj.nextStates;
+				stateStrArr.push(graphObjToDOT(graphObj));
+				graphObj.nextStates = [];
+				curStateIndex = 0;
+			}
+			//console.log(stateStrArr[2]);
+			//d3.select("#graph").graphviz().renderDot(graphString);
+			//d3.select("#graph").graphviz.growEnteringEdges(false);
 			
 			/*stateStrArr.forEach((str, index, arr)=>{
 				
@@ -73,11 +83,36 @@ B 3 C
 		
 		function renderAnim(index){
 			var inputString = document.getElementById("inputString").value;
-			document.getElementById("evalStep").innerText=inputString.substring(0,index-1)
+			document.getElementById("evalStepUpcoming").innerText=inputString.substring(index-1);
+			document.getElementById("evalStep").innerText=inputString.substring(index-1,index-2);
+			document.getElementById("evalStepPrev").innerText=inputString.substring(0,index-2);
+			var acceptedString = document.getElementById("acceptedString").value;
 			d3.select("#graph").graphviz().renderDot(stateStrArr[index]).on("end", function() {
 				animIndex++;
 				renderAnim(animIndex);
 			});
+			var evalResult = document.getElementById("evalResult")
+			if (index == inputString.length+2){
+				var accepted = false;
+				graphObj.curStates.forEach((item, index, arr)=>{
+					if(graphObj[item].isAcceptState){
+						accepted=true;
+					}
+				})
+				if(accepted){
+					evalResult.innerText="input accepted"
+					evalResult.classList.add("accepted");
+					evalResult.classList.remove("rejected");
+				} else {
+					evalResult.innerText="input rejected"
+					evalResult.classList.add("rejected");
+					evalResult.classList.remove("accepted");
+				}
+			} else {
+				evalResult.classList.remove("accepted");
+				evalResult.classList.remove("rejected");
+				evalResult.innerText="running..."
+			}
 		}
 
 		function process() {
@@ -103,7 +138,7 @@ B 3 C
 			var acceptArr = acceptStr.split(/[\s,]/).filter(element => element);
 			console.log(acceptArr);
 			acceptArr.forEach((node, index, arr) => {
-				graphObj[node] = graphObj[node] || {}
+				graphObj[node] = graphObj[node] || {edges:{}}
 				graphObj[node].isAcceptState = true;
 			})
 		}
@@ -125,8 +160,10 @@ B 3 C
 			}*/
 			graphObj[lineArr[0]] = graphObj[lineArr[0]] || {}
 			graphObj[lineArr[0]].edges = graphObj[lineArr[0]].edges || {}
-			graphObj[lineArr[0]].edges[lineArr[1]]=lineArr[2]
-			graphObj[lineArr[2]] = graphObj[lineArr[2]] || {}
+			graphObj[lineArr[0]].edges[lineArr[1]]=graphObj[lineArr[0]].edges[lineArr[1]] || []
+			graphObj[lineArr[0]].edges[lineArr[1]].push(lineArr[2])
+			//graphObj[lineArr[0]].edges[lineArr[1]]=lineArr[2]
+			graphObj[lineArr[2]] = graphObj[lineArr[2]] || {edges:{}}
 		}
 		
 		function graphObjToDOT(graphObj){
@@ -152,7 +189,7 @@ B 3 C
 		
 		d3.select("#graph").graphviz().renderDot('digraph  {b[fillcolor=cadetblue1 style=filled]\na -> b[label=3]}');
 		
-		
+		process();
 		
 	</script>
 	

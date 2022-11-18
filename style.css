@@ -6,3 +6,27 @@
 	float: right;
 	width: 50%;
 }
+
+.evalSteps{
+	font-size: 4em;
+}
+#evalStep{
+	color: green;
+	
+}
+#evalStepPrev{
+	color: blue;
+	
+}
+
+#evalResult{
+	font-size: 2em;
+}
+
+.accepted{
+	color:green;
+}
+
+.rejected{
+	color:red;
+}
