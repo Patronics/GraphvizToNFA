@@ -8,7 +8,7 @@
 	<script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 	<div id="inputArea">
 		<label for="inputString">string to evaluate:</label><br>
-		<input type="text" id="inputString"><br>
+		<input type="text" id="inputString" value="1223"><br>
 		<label for="initialString">starting state:</label><br>
 		<input type="text" id="initialString" value="A"><br>
 		<label for="acceptedString">accepting states:</label><br>
@@ -25,28 +25,74 @@ B 3 C
 	</div>
 	<div id="finalResult">
 		<div id="graph" style="text-align: center;"></div>
-		resultHere
+		<div id="evalStep"></div>
 		
 	</div>
 	<script type="text/javascript">
 		var graphObj = {};
 		var graphString = "";
-
+		var stateStrArr = [];
+		var animIndex = 0;
+		
 		function animateMachine() {
+			var inputString = document.getElementById("inputString").value;
 			process(); //make sure object is up to date
+			graphObj.curStates = [];
+			graphObj.nextStates = [];
+			graphObj.curStates[0]=graphObj.startState__;
+			stateStrArr = [];
+			animIndex = 0;
+			stateStrArr.push(graphObjToDOT(graphObj));
+			renderAnim(0)
+			for(let char of inputString){
+				graphObj.curStates.forEach((node, index, arr) => {
+					if(graphObj[node].edges[char] !== undefined){
+						console.log(node, char, graphObj[node].edges[char]);
+						graphObj.nextStates.push(graphObj[node].edges[char]);
+					}
+				})
+				graphObj.curStates = graphObj.nextStates;
+				stateStrArr.push(graphObjToDOT(graphObj));
+				graphObj.nextStates = [];
+			}
+			//console.log(stateStrArr[2]);
+			//d3.select("#graph").graphviz().renderDot(graphString);
+			d3.select("#graph").graphviz().zoom(false);
+			//d3.select("#graph").graphviz.growEnteringEdges(false);
+			d3.select("#graph").graphviz().transition(function(){
+					return d3.transition("main")
+					.ease(d3.easeLinear)
+					.delay(0)
+					.duration(500)
+			})
+			
+			/*stateStrArr.forEach((str, index, arr)=>{
+				
+			})*/
+		}
+		
+		function renderAnim(index){
+			var inputString = document.getElementById("inputString").value;
+			document.getElementById("evalStep").innerText=inputString.substring(0,index-1)
+			d3.select("#graph").graphviz().renderDot(stateStrArr[index]).on("end", function() {
+				animIndex++;
+				renderAnim(animIndex);
+			});
 		}
 
 		function process() {
-			var inputString = document.getElementById("inputString").value;
 			var machineDesc = document.getElementById("machineDesc").value;
 			var acceptedString = document.getElementById("acceptedString").value;
 			var initialString = document.getElementById("initialString").value;
 			graphObj = {};
+			graphObj.curStates = [];
 			graphString = "";
 			setStartingState(initialString);
 			acceptedStringToObj(acceptedString);
 			graphStrToObj(machineDesc);
 			console.log(graphObj);
+			d3.select("#graph").graphviz().zoom(false);
+
 		}
 		
 		function setStartingState(initialString) {
@@ -84,20 +130,27 @@ B 3 C
 		}
 		
 		function graphObjToDOT(graphObj){
-			graphString = `digraph {__startState__ [label= "", shape=none,height=.0,width=.0]\n__startState__ -> ${graphObj.startState__}\n`;
+			graphString = `digraph {`
+			graphString = `${graphString}__startState__ [label= "", shape=none,height=.0,width=.0]\n__startState__ -> ${graphObj.startState__}\n`;
+			//console.log(graphObj.curStates)
+			graphObj.curStates.forEach((node, index, arr) => {
+				graphString = `${graphString}${node}[fillcolor=cadetblue1 style=filled]\n`;
+				console.log("current states:" + node)
+			})
 			for (node in graphObj){
 				if(graphObj[node].isAcceptState){
 					graphString = `${graphString}${node}[shape=doublecircle]\n`;
 				}
 				for (edge in graphObj[node].edges){
-					console.log(node);
+					//console.log(node);
 					graphString = `${graphString} ${node} ->  ${graphObj[node].edges[edge]} [label="  ${edge}"] ;\n`;
 				}
 			}
 			graphString = graphString + "}";
+			return graphString;
 		}
 		
-		d3.select("#graph").graphviz().renderDot('digraph  {a -> b[label=3]}');
+		d3.select("#graph").graphviz().renderDot('digraph  {b[fillcolor=cadetblue1 style=filled]\na -> b[label=3]}');
 		
 		
 		
