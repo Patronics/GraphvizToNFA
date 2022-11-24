@@ -170,10 +170,6 @@ B 3 C
 			graphString = `digraph {`
 			graphString = `${graphString}__startState__ [label= "", shape=none,height=.0,width=.0]\n__startState__ -> ${graphObj.startState__}\n`;
 			//console.log(graphObj.curStates)
-			graphObj.curStates.forEach((node, index, arr) => {
-				graphString = `${graphString}${node}[fillcolor=cadetblue1 style=filled]\n`;
-				console.log("current states:" + node)
-			})
 			for (node in graphObj){
 				if(graphObj[node].isAcceptState){
 					graphString = `${graphString}${node}[shape=doublecircle]\n`;
@@ -183,6 +179,10 @@ B 3 C
 					graphString = `${graphString} ${node} ->  ${graphObj[node].edges[edge]} [label="  ${edge}"] ;\n`;
 				}
 			}
+			graphObj.curStates.forEach((node, index, arr) => {
+				graphString = `${graphString}${node}[fillcolor=cadetblue1 style=filled]\n`;
+				console.log("current states:" + node)
+			})
 			graphString = graphString + "}";
 			return graphString;
 		}
