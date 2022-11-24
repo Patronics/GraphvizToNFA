@@ -21,7 +21,7 @@ B 2 B
 B 2 D
 B 3 C
 </textarea><br>
-		<button onclick="process()">process!</button>
+		<button onclick="preview()">preview</button>
 		<button onclick="animateMachine()">animate!</button>
 	</div>
 	<div id="finalResult">
@@ -36,21 +36,24 @@ B 3 C
 		var graphString = "";
 		var stateStrArr = [];
 		var animIndex = 0;
+		var isAnimating = false;
+		var graphviz = d3.select("#graph").graphviz().transition(function(){
+			return d3.transition("main")
+			.ease(d3.easeLinear)
+			.delay(0)
+			.duration(1000)
+		}).zoom(false)
+		.logEvents(true);
 		
 		function animateMachine() {
+			isAnimating = true;
 			var inputString = document.getElementById("inputString").value;
-			document.getElementById("evalStepUpcoming").innerText=inputString;
-			d3.select("#graph").graphviz().zoom(false);
-			d3.select("#graph").graphviz().transition(function(){
-					return d3.transition("main")
-					.ease(d3.easeLinear)
-					.delay(0)
-					.duration(500)
-			})
+			document.getElementById("evalStepUpcoming").innerText=inputString;			
 			process(); //make sure object is up to date
 			graphObj.curStates = [];
 			graphObj.nextStates = [];
 			graphObj.curStates[0]=graphObj.startState__;
+			graphObj.nextStates[0]=graphObj.startState__;
 			stateStrArr = [];
 			var curStateIndex=0;
 			animIndex = 0;
@@ -67,8 +70,9 @@ B 3 C
 						console.log(graphObj.nextStates);
 					}
 				})
-				graphObj.curStates = graphObj.nextStates;
+				
 				stateStrArr.push(graphObjToDOT(graphObj));
+				graphObj.curStates = graphObj.nextStates;
 				graphObj.nextStates = [];
 				curStateIndex = 0;
 			}
@@ -82,16 +86,19 @@ B 3 C
 		}
 		
 		function renderAnim(index){
+			if(!isAnimating){
+				return;
+			}
 			var inputString = document.getElementById("inputString").value;
 			document.getElementById("evalStepUpcoming").innerText=inputString.substring(index-1);
 			document.getElementById("evalStep").innerText=inputString.substring(index-1,index-2);
 			document.getElementById("evalStepPrev").innerText=inputString.substring(0,index-2);
 			var acceptedString = document.getElementById("acceptedString").value;
-			d3.select("#graph").graphviz().renderDot(stateStrArr[index]).on("end", function() {
+			/*d3.select("#graph").graphviz()*/graphviz.renderDot(stateStrArr[index]).on("end", function() {
 				animIndex++;
 				renderAnim(animIndex);
 			});
-			var evalResult = document.getElementById("evalResult")
+			var evalResult = document.getElementById("evalResult");
 			if (index == inputString.length+2){
 				var accepted = false;
 				graphObj.curStates.forEach((item, index, arr)=>{
@@ -115,18 +122,31 @@ B 3 C
 			}
 		}
 
+		function preview() {
+			isAnimating = false;
+			process();
+			evalResult.classList.remove("accepted");
+			evalResult.classList.remove("rejected");
+			evalResult.innerText="rendered"
+			document.getElementById("evalStepUpcoming").innerText="";
+			document.getElementById("evalStep").innerHTML="&nbsp;";
+			document.getElementById("evalStepPrev").innerText="";
+		}
+
 		function process() {
 			var machineDesc = document.getElementById("machineDesc").value;
 			var acceptedString = document.getElementById("acceptedString").value;
 			var initialString = document.getElementById("initialString").value;
+			var evalResult = document.getElementById("evalResult");
 			graphObj = {};
 			graphObj.curStates = [];
+			graphObj.nextStates = [];
 			graphString = "";
 			setStartingState(initialString);
 			acceptedStringToObj(acceptedString);
 			graphStrToObj(machineDesc);
 			console.log(graphObj);
-			d3.select("#graph").graphviz().zoom(false);
+			//d3.select("#graph").graphviz().zoom(false);
 
 		}
 		
@@ -148,7 +168,7 @@ B 3 C
 			graphArr.forEach(graphLineToObj);
 			graphObjToDOT(graphObj);
 			console.log(graphString)
-			d3.select("#graph").graphviz().renderDot(graphString);
+			/*d3.select("#graph").graphviz()*/graphviz.renderDot(graphString);
 		}
 		
 		function graphLineToObj(graphLine, index, arr) {
@@ -168,11 +188,11 @@ B 3 C
 		
 		function graphObjToDOT(graphObj){
 			graphString = `digraph {`
-			graphString = `${graphString}__startState__ [label= "", shape=none,height=.0,width=.0]\n__startState__ -> ${graphObj.startState__}\n`;
+			graphString = `${graphString}\nnode [fillcolor="white" style="filled"]\n__startState__ [label= "", shape=none,height=.0,width=.0]\n__startState__ -> ${graphObj.startState__}\n`;
 			//console.log(graphObj.curStates)
 			for (node in graphObj){
 				if(graphObj[node].isAcceptState){
-					graphString = `${graphString}${node}[shape=doublecircle]\n`;
+					graphString = `${graphString}${node}[shape=doublecircle color=green]\n`;
 				}
 				for (edge in graphObj[node].edges){
 					//console.log(node);
@@ -183,11 +203,15 @@ B 3 C
 				graphString = `${graphString}${node}[fillcolor=cadetblue1 style=filled]\n`;
 				console.log("current states:" + node)
 			})
+			graphObj.nextStates.forEach((node, index, arr) => {
+				graphString = `${graphString}${node}[fillcolor=blue style=filled]\n`;
+				console.log("current states:" + node)
+			})
 			graphString = graphString + "}";
 			return graphString;
 		}
 		
-		d3.select("#graph").graphviz().renderDot('digraph  {b[fillcolor=cadetblue1 style=filled]\na -> b[label=3]}');
+		graphviz.renderDot('digraph  {b[fillcolor=cadetblue1 style=filled]\na -> b[label=3]}');
 		
 		process();
 		
